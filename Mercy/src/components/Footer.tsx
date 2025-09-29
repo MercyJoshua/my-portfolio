@@ -38,7 +38,7 @@ const Footer = () => {
 
           {/* Quick Links */}
           <div>
-            <h3 className="text-white font-semibold mb-4">Quick Links</h3>
+            <h3 className="text-green-400 font-semibold mb-4">Quick Links</h3>
             <div className="space-y-2">
               <a href="#skills" className="block text-gray-400 hover:text-cyan-400 transition-colors text-sm">
                 Skills & Expertise
@@ -57,7 +57,7 @@ const Footer = () => {
 
           {/* Social & Contact */}
           <div>
-            <h3 className="text-white font-semibold mb-4">Connect</h3>
+            <h3 className="text-green-400 font-semibold mb-4">Connect</h3>
             <div className="flex gap-4 mb-4">
               {socialLinks.map((link) => (
                 <a
