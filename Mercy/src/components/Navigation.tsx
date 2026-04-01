@@ -1,7 +1,14 @@
 import React, { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { cmsApi } from '@/lib/cms-api';
 
 const Navigation = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const { data: settings } = useQuery({
+    queryKey: ['settings', 'public'],
+    queryFn: cmsApi.getPublicSettings,
+  });
+  const resumeUrl = settings?.resumeUrl || '/resume.pdf';
 
   const navItems = [
     { name: 'Home', href: '#home' },
@@ -37,7 +44,7 @@ const Navigation = () => {
                 </a>
               ))}
               <button
-  onClick={() => window.open('/resume.pdf', '_blank')}
+  onClick={() => window.open(resumeUrl, '_blank')}
   className="px-4 py-2 bg-gradient-to-r from-cyan-500 to-green-500 rounded-lg text-black font-semibold text-sm hover:shadow-lg hover:shadow-cyan-500/50 transition-all duration-300"
 >
   Resume
@@ -74,7 +81,7 @@ const Navigation = () => {
                 </a>
               ))}
              <button
-  onClick={() => window.open('/resume.pdf', '_blank')}
+  onClick={() => window.open(resumeUrl, '_blank')}
   className="px-4 py-2 bg-gradient-to-r from-cyan-500 to-green-500 rounded-lg text-black font-semibold text-sm hover:shadow-lg hover:shadow-cyan-500/50 transition-all duration-300"
 >
   Resume

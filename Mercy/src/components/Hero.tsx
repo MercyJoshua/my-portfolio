@@ -1,6 +1,15 @@
 import React from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { cmsApi } from '@/lib/cms-api';
 
 const Hero = () => {
+  const { data: settings } = useQuery({
+    queryKey: ['settings', 'public'],
+    queryFn: cmsApi.getPublicSettings,
+  });
+
+  const resumeUrl = settings?.resumeUrl || '/resume.pdf';
+
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-gradient-to-br from-gray-900 via-black to-gray-900">
       {/* Animated Background */}
@@ -51,8 +60,9 @@ const Hero = () => {
            
           </button>
          <a
-  href="/resume.pdf"
-  download="My_Resume.pdf"
+  href={resumeUrl}
+  target="_blank"
+  rel="noopener noreferrer"
   className="px-8 py-3 border-2 border-green-400 text-green-400 rounded-lg font-semibold hover:bg-green-400 hover:text-black transition-all duration-300 text-center"
 >
   Download Resume
