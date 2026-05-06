@@ -9,6 +9,14 @@ const parseList = (value: string) =>
     .map((v) => v.trim())
     .filter(Boolean);
 
+const getErrorMessage = (error: unknown) => {
+  if (error instanceof Error && error.message) {
+    return error.message;
+  }
+
+  return 'Something went wrong. Please try again.';
+};
+
 const AdminPage = () => {
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<'projects' | 'skills' | 'timeline' | 'settings'>(
@@ -88,6 +96,9 @@ const AdminPage = () => {
     isPublished: true,
   });
   const [projectImageFile, setProjectImageFile] = useState<File | null>(null);
+  const [projectImagePreviewUrl, setProjectImagePreviewUrl] = useState('');
+  const [projectImageUploadError, setProjectImageUploadError] = useState('');
+  const [projectCreateError, setProjectCreateError] = useState('');
   const [resumeFile, setResumeFile] = useState<File | null>(null);
 
   const [editingProjectId, setEditingProjectId] = useState<string | null>(null);
@@ -115,7 +126,14 @@ const AdminPage = () => {
         sortOrder: 0,
         isPublished: true,
       });
+      setProjectImageFile(null);
+      setProjectImagePreviewUrl('');
+      setProjectImageUploadError('');
+      setProjectCreateError('');
       await invalidateAll();
+    },
+    onError: (error) => {
+      setProjectCreateError(getErrorMessage(error));
     },
   });
 
@@ -143,6 +161,11 @@ const AdminPage = () => {
     onSuccess: (result) => {
       setProjectForm((prev) => ({ ...prev, imageUrl: result.url }));
       setProjectImageFile(null);
+      setProjectImagePreviewUrl(result.url);
+      setProjectImageUploadError('');
+    },
+    onError: (error) => {
+      setProjectImageUploadError(getErrorMessage(error));
     },
   });
 
@@ -290,6 +313,21 @@ const AdminPage = () => {
     }
   }, [defaultSkillCategoryId, skillForm.categoryId]);
 
+  useEffect(() => {
+    if (!projectImageFile) {
+      setProjectImagePreviewUrl(projectForm.imageUrl);
+      return;
+    }
+
+    const objectUrl = URL.createObjectURL(projectImageFile);
+    setProjectImagePreviewUrl(objectUrl);
+    setProjectImageUploadError('');
+
+    return () => {
+      URL.revokeObjectURL(objectUrl);
+    };
+  }, [projectImageFile, projectForm.imageUrl]);
+
   if (!authToken.get()) {
     return (
       <div className="min-h-screen bg-black text-white flex items-center justify-center p-6">
@@ -358,7 +396,15 @@ const AdminPage = () => {
               <h2 className="text-xl font-semibold mb-4">Create Project</h2>
               <div className="grid md:grid-cols-2 gap-4">
                 <input className="bg-gray-800 rounded p-2" placeholder="Title" value={projectForm.title} onChange={(e) => setProjectForm((p) => ({ ...p, title: e.target.value }))} />
-                <input className="bg-gray-800 rounded p-2" placeholder="Image URL" value={projectForm.imageUrl} onChange={(e) => setProjectForm((p) => ({ ...p, imageUrl: e.target.value }))} />
+                <input
+                  className="bg-gray-800 rounded p-2"
+                  placeholder="Image URL"
+                  value={projectForm.imageUrl}
+                  onChange={(e) => {
+                    setProjectForm((p) => ({ ...p, imageUrl: e.target.value }));
+                    setProjectCreateError('');
+                  }}
+                />
                 <input className="bg-gray-800 rounded p-2" placeholder="GitHub URL" value={projectForm.githubUrl} onChange={(e) => setProjectForm((p) => ({ ...p, githubUrl: e.target.value }))} />
                 <input className="bg-gray-800 rounded p-2" placeholder="Demo URL" value={projectForm.demoUrl} onChange={(e) => setProjectForm((p) => ({ ...p, demoUrl: e.target.value }))} />
                 <input className="bg-gray-800 rounded p-2" placeholder="Tech stack (comma separated)" value={projectForm.techStack} onChange={(e) => setProjectForm((p) => ({ ...p, techStack: e.target.value }))} />
@@ -369,23 +415,49 @@ const AdminPage = () => {
                 <input
                   type="file"
                   accept="image/*"
-                  onChange={(e) => setProjectImageFile(e.target.files?.[0] || null)}
+                  onChange={(e) => {
+                    setProjectImageFile(e.target.files?.[0] || null);
+                    setProjectCreateError('');
+                  }}
                   className="text-sm text-gray-300"
                 />
                 <button
                   className="px-4 py-2 bg-blue-700 rounded"
                   onClick={() => uploadProjectImageMutation.mutate()}
                   type="button"
+                  disabled={!projectImageFile || uploadProjectImageMutation.isPending}
                 >
-                  Upload Image
+                  {uploadProjectImageMutation.isPending ? 'Uploading...' : 'Upload Image'}
                 </button>
                 {projectImageFile && <span className="text-xs text-gray-400">{projectImageFile.name}</span>}
               </div>
+              {projectImageUploadError && (
+                <p className="mt-2 text-sm text-red-400">{projectImageUploadError}</p>
+              )}
+              {projectImagePreviewUrl && (
+                <div className="mt-4 max-w-md overflow-hidden rounded-xl border border-gray-800 bg-gray-950">
+                  <img
+                    src={projectImagePreviewUrl}
+                    alt="Selected project preview"
+                    className="h-52 w-full object-cover"
+                  />
+                  <div className="border-t border-gray-800 px-3 py-2 text-xs text-gray-400">
+                    {projectImageFile ? 'Previewing selected file before upload.' : 'Previewing the image that will be saved with this project.'}
+                  </div>
+                </div>
+              )}
               <label className="flex items-center gap-2 mt-3 text-sm text-gray-300">
                 <input type="checkbox" checked={projectForm.isPublished} onChange={(e) => setProjectForm((p) => ({ ...p, isPublished: e.target.checked }))} />
                 Published
               </label>
-              <button className="mt-4 px-4 py-2 bg-green-600 rounded" onClick={() => createProjectMutation.mutate()}>Add Project</button>
+              {projectCreateError && <p className="mt-3 text-sm text-red-400">{projectCreateError}</p>}
+              <button
+                className="mt-4 px-4 py-2 bg-green-600 rounded"
+                onClick={() => createProjectMutation.mutate()}
+                disabled={createProjectMutation.isPending}
+              >
+                {createProjectMutation.isPending ? 'Saving...' : 'Add Project'}
+              </button>
             </div>
 
             <div className="space-y-4">
