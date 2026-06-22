@@ -2,6 +2,10 @@ import { useEffect, useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { cmsApi, authToken } from '@/lib/cms-api';
 import { Project, SiteSettings, SkillCategory, TimelineItem } from '@/types/cms';
+import ProjectRow from '@/components/admin/ProjectRow';
+import SettingsPanel from '@/components/admin/SettingsPanel';
+import SkillCategoryBlock from '@/components/admin/SkillCategoryBlock';
+import TimelineRow from '@/components/admin/TimelineRow';
 
 const parseList = (value: string) =>
   value
@@ -104,17 +108,18 @@ const AdminPage = () => {
   const [editingProjectId, setEditingProjectId] = useState<string | null>(null);
 
   const createProjectMutation = useMutation({
-    mutationFn: () =>
-      cmsApi.createProject({
-        title: projectForm.title,
-        description: projectForm.description,
-        imageUrl: projectForm.imageUrl,
-        techStack: parseList(projectForm.techStack),
-        githubUrl: projectForm.githubUrl,
-        demoUrl: projectForm.demoUrl,
-        sortOrder: Number(projectForm.sortOrder),
-        isPublished: projectForm.isPublished,
-      }),
+   mutationFn: async () => {
+  return cmsApi.createProject({
+    title: projectForm.title,
+    description: projectForm.description,
+    imageUrl: projectImagePreviewUrl, 
+    techStack: parseList(projectForm.techStack),
+    githubUrl: projectForm.githubUrl,
+    demoUrl: projectForm.demoUrl,
+    sortOrder: Number(projectForm.sortOrder),
+    isPublished: projectForm.isPublished,
+  });
+},
     onSuccess: async () => {
       setProjectForm({
         title: '',
@@ -454,7 +459,7 @@ const AdminPage = () => {
               <button
                 className="mt-4 px-4 py-2 bg-green-600 rounded"
                 onClick={() => createProjectMutation.mutate()}
-                disabled={createProjectMutation.isPending}
+                disabled={!projectForm.imageUrl}
               >
                 {createProjectMutation.isPending ? 'Saving...' : 'Add Project'}
               </button>
@@ -559,256 +564,6 @@ const AdminPage = () => {
             onSave={() => updateSettingsMutation.mutate()}
           />
         )}
-      </div>
-    </div>
-  );
-};
-
-type SettingsPanelProps = {
-  settings?: SiteSettings;
-  resumeUrlForm: string;
-  setResumeUrlForm: (value: string) => void;
-  resumeFile: File | null;
-  setResumeFile: (file: File | null) => void;
-  onUploadResume: () => void;
-  onSave: () => void;
-};
-
-const SettingsPanel = ({
-  settings,
-  resumeUrlForm,
-  setResumeUrlForm,
-  resumeFile,
-  setResumeFile,
-  onUploadResume,
-  onSave,
-}: SettingsPanelProps) => {
-  return (
-    <section className="space-y-6">
-      <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
-        <h2 className="text-xl font-semibold mb-4">Site Settings</h2>
-        <p className="text-gray-400 text-sm mb-4">Control global portfolio settings.</p>
-        <label className="block text-sm mb-2 text-gray-300">Resume URL</label>
-        <input
-          className="bg-gray-800 rounded p-2 w-full mb-4"
-          placeholder="https://.../resume.pdf or /resume.pdf"
-          value={resumeUrlForm}
-          onChange={(e) => setResumeUrlForm(e.target.value)}
-        />
-        <div className="mb-4 flex flex-col md:flex-row gap-3 md:items-center">
-          <input
-            type="file"
-            accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-            onChange={(e) => setResumeFile(e.target.files?.[0] || null)}
-            className="text-sm text-gray-300"
-          />
-          <button className="px-4 py-2 bg-blue-700 rounded" onClick={onUploadResume} type="button">
-            Upload Resume File
-          </button>
-          {resumeFile && <span className="text-xs text-gray-400">{resumeFile.name}</span>}
-        </div>
-        <button className="px-4 py-2 bg-green-600 rounded" onClick={onSave}>Save Settings</button>
-        <p className="text-gray-500 text-xs mt-3">Current saved value: {settings?.resumeUrl || '/resume.pdf'}</p>
-      </div>
-    </section>
-  );
-};
-
-type ProjectRowProps = {
-  project: Project;
-  editing: boolean;
-  onEdit: () => void;
-  onCancel: () => void;
-  onSave: (payload: Partial<Omit<Project, 'id'>>) => void;
-  onDelete: () => void;
-};
-
-const ProjectRow = ({ project, editing, onEdit, onCancel, onSave, onDelete }: ProjectRowProps) => {
-  const [form, setForm] = useState({
-    title: project.title,
-    description: project.description,
-    imageUrl: project.imageUrl,
-    techStack: project.techStack.join(', '),
-    githubUrl: project.githubUrl,
-    demoUrl: project.demoUrl,
-    sortOrder: project.sortOrder,
-    isPublished: project.isPublished,
-  });
-
-  useEffect(() => {
-    setForm({
-      title: project.title,
-      description: project.description,
-      imageUrl: project.imageUrl,
-      techStack: project.techStack.join(', '),
-      githubUrl: project.githubUrl,
-      demoUrl: project.demoUrl,
-      sortOrder: project.sortOrder,
-      isPublished: project.isPublished,
-    });
-  }, [project]);
-
-  if (!editing) {
-    return (
-      <div className="bg-gray-900 border border-gray-800 rounded-xl p-4">
-        <div className="flex justify-between items-start gap-4">
-          <div>
-            <p className="font-semibold text-lg">{project.title}</p>
-            <p className="text-gray-400 text-sm">{project.description}</p>
-          </div>
-          <div className="flex gap-2">
-            <button className="px-3 py-1 bg-cyan-700 rounded" onClick={onEdit}>Edit</button>
-            <button className="px-3 py-1 bg-red-700 rounded" onClick={onDelete}>Delete</button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="bg-gray-900 border border-cyan-700 rounded-xl p-4 space-y-3">
-      <input className="bg-gray-800 rounded p-2 w-full" value={form.title} onChange={(e) => setForm((p) => ({ ...p, title: e.target.value }))} />
-      <textarea className="bg-gray-800 rounded p-2 w-full" rows={3} value={form.description} onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))} />
-      <div className="grid md:grid-cols-2 gap-3">
-        <input className="bg-gray-800 rounded p-2" value={form.imageUrl} onChange={(e) => setForm((p) => ({ ...p, imageUrl: e.target.value }))} />
-        <input className="bg-gray-800 rounded p-2" value={form.techStack} onChange={(e) => setForm((p) => ({ ...p, techStack: e.target.value }))} />
-        <input className="bg-gray-800 rounded p-2" value={form.githubUrl} onChange={(e) => setForm((p) => ({ ...p, githubUrl: e.target.value }))} />
-        <input className="bg-gray-800 rounded p-2" value={form.demoUrl} onChange={(e) => setForm((p) => ({ ...p, demoUrl: e.target.value }))} />
-      </div>
-      <div className="flex items-center gap-4">
-        <input className="bg-gray-800 rounded p-2 w-28" type="number" value={form.sortOrder} onChange={(e) => setForm((p) => ({ ...p, sortOrder: Number(e.target.value) }))} />
-        <label className="text-sm text-gray-300 flex items-center gap-2">
-          <input type="checkbox" checked={form.isPublished} onChange={(e) => setForm((p) => ({ ...p, isPublished: e.target.checked }))} />
-          Published
-        </label>
-      </div>
-      <div className="flex gap-2">
-        <button className="px-3 py-1 bg-green-700 rounded" onClick={() => onSave({ ...form, techStack: parseList(form.techStack) })}>Save</button>
-        <button className="px-3 py-1 bg-gray-700 rounded" onClick={onCancel}>Cancel</button>
-      </div>
-    </div>
-  );
-};
-
-type SkillCategoryBlockProps = {
-  category: SkillCategory;
-  onUpdateCategory: (payload: { name: string; sortOrder: number }) => void;
-  onDeleteCategory: () => void;
-  onUpdateSkill: (
-    id: string,
-    payload: {
-      categoryId: string;
-      name: string;
-      sortOrder: number;
-    },
-  ) => void;
-  onDeleteSkill: (id: string) => void;
-};
-
-const SkillCategoryBlock = ({ category, onUpdateCategory, onDeleteCategory, onUpdateSkill, onDeleteSkill }: SkillCategoryBlockProps) => {
-  const [name, setName] = useState(category.name);
-  const [sortOrder, setSortOrder] = useState(category.sortOrder);
-
-  useEffect(() => {
-    setName(category.name);
-    setSortOrder(category.sortOrder);
-  }, [category]);
-
-  return (
-    <div className="bg-gray-900 border border-gray-800 rounded-xl p-4 space-y-3">
-      <div className="flex flex-col md:flex-row gap-3 md:items-center">
-        <input className="bg-gray-800 rounded p-2" value={name} onChange={(e) => setName(e.target.value)} />
-        <input className="bg-gray-800 rounded p-2 w-28" type="number" value={sortOrder} onChange={(e) => setSortOrder(Number(e.target.value))} />
-        <div className="flex gap-2">
-          <button className="px-3 py-1 bg-green-700 rounded" onClick={() => onUpdateCategory({ name, sortOrder })}>Save Category</button>
-          <button className="px-3 py-1 bg-red-700 rounded" onClick={onDeleteCategory}>Delete Category</button>
-        </div>
-      </div>
-
-      <div className="space-y-2">
-        {category.skills.map((skill) => (
-          <SkillRow key={skill.id} skill={skill} onUpdate={(payload) => onUpdateSkill(skill.id, payload)} onDelete={() => onDeleteSkill(skill.id)} />
-        ))}
-      </div>
-    </div>
-  );
-};
-
-type SkillRowProps = {
-  skill: SkillCategory['skills'][number];
-  onUpdate: (payload: {
-    categoryId: string;
-    name: string;
-    sortOrder: number;
-  }) => void;
-  onDelete: () => void;
-};
-
-const SkillRow = ({ skill, onUpdate, onDelete }: SkillRowProps) => {
-  const [form, setForm] = useState({
-    categoryId: skill.categoryId,
-    name: skill.name,
-    sortOrder: skill.sortOrder,
-  });
-
-  useEffect(() => {
-    setForm({
-      categoryId: skill.categoryId,
-      name: skill.name,
-      sortOrder: skill.sortOrder,
-    });
-  }, [skill]);
-
-  return (
-    <div className="border border-gray-800 rounded-lg p-3 grid md:grid-cols-4 gap-2 items-center">
-      <input className="bg-gray-800 rounded p-2" value={form.name} onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))} />
-      <input className="bg-gray-800 rounded p-2" type="number" value={form.sortOrder} onChange={(e) => setForm((p) => ({ ...p, sortOrder: Number(e.target.value) }))} />
-      <button className="px-3 py-2 bg-green-700 rounded" onClick={() => onUpdate(form)}>Save</button>
-      <button className="px-3 py-2 bg-red-700 rounded" onClick={onDelete}>Delete</button>
-    </div>
-  );
-};
-
-type TimelineRowProps = {
-  item: TimelineItem;
-  onSave: (payload: Partial<Omit<TimelineItem, 'id'>>) => void;
-  onDelete: () => void;
-};
-
-const TimelineRow = ({ item, onSave, onDelete }: TimelineRowProps) => {
-  const [form, setForm] = useState({
-    yearLabel: item.yearLabel,
-    title: item.title,
-    description: item.description,
-    status: item.status,
-    sortOrder: item.sortOrder,
-  });
-
-  useEffect(() => {
-    setForm({
-      yearLabel: item.yearLabel,
-      title: item.title,
-      description: item.description,
-      status: item.status,
-      sortOrder: item.sortOrder,
-    });
-  }, [item]);
-
-  return (
-    <div className="bg-gray-900 border border-gray-800 rounded-xl p-4 space-y-3">
-      <div className="grid md:grid-cols-4 gap-3">
-        <input className="bg-gray-800 rounded p-2" value={form.yearLabel} onChange={(e) => setForm((p) => ({ ...p, yearLabel: e.target.value }))} />
-        <input className="bg-gray-800 rounded p-2" value={form.title} onChange={(e) => setForm((p) => ({ ...p, title: e.target.value }))} />
-        <select className="bg-gray-800 rounded p-2" value={form.status} onChange={(e) => setForm((p) => ({ ...p, status: e.target.value as 'completed' | 'current' }))}>
-          <option value="completed">completed</option>
-          <option value="current">current</option>
-        </select>
-        <input className="bg-gray-800 rounded p-2" type="number" value={form.sortOrder} onChange={(e) => setForm((p) => ({ ...p, sortOrder: Number(e.target.value) }))} />
-      </div>
-      <textarea className="bg-gray-800 rounded p-2 w-full" rows={3} value={form.description} onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))} />
-      <div className="flex gap-2">
-        <button className="px-3 py-1 bg-green-700 rounded" onClick={() => onSave(form)}>Save</button>
-        <button className="px-3 py-1 bg-red-700 rounded" onClick={onDelete}>Delete</button>
       </div>
     </div>
   );
