@@ -11,23 +11,14 @@ const Projects = () => {
     queryFn: cmsApi.getProjects,
   });
 
-  const validProjects = useMemo(() => projects ?? [], [projects]);
+  const list = useMemo(() => projects ?? [], [projects]);
 
-  const scrollByAmount = (dir: 'left' | 'right') => {
-    if (!scrollRef.current) return;
-
-    scrollRef.current.scrollBy({
-      left: dir === 'left' ? -420 : 420,
-      behavior: 'smooth',
-    });
-  };
-
-  // Track centered card (Netflix-style focus)
+  // 🎯 Center tracking (Netflix spotlight behavior)
   useEffect(() => {
     const container = scrollRef.current;
     if (!container) return;
 
-    const cards = Array.from(container.children);
+    const items = Array.from(container.children);
 
     const observer = new IntersectionObserver(
       (entries) => {
@@ -40,37 +31,72 @@ const Projects = () => {
       },
       {
         root: container,
-        threshold: 0.6,
+        threshold: 0.65,
       }
     );
 
-    cards.forEach((card) => observer.observe(card));
+    items.forEach((item) => observer.observe(item));
     return () => observer.disconnect();
-  }, [validProjects]);
+  }, [list]);
+
+  // 🎬 Smooth scroll buttons (like Netflix row controls)
+  const scroll = (dir: 'left' | 'right') => {
+    if (!scrollRef.current) return;
+
+    const amount = scrollRef.current.clientWidth * 0.8;
+
+    scrollRef.current.scrollBy({
+      left: dir === 'left' ? -amount : amount,
+      behavior: 'smooth',
+    });
+  };
+
+  // 🎞️ subtle autoplay drift (stop when user interacts)
+  useEffect(() => {
+    if (!scrollRef.current || list.length === 0) return;
+
+    let frame: number;
+
+    const autoScroll = () => {
+      if (!scrollRef.current) return;
+
+      scrollRef.current.scrollLeft += 0.3; // slow cinematic drift
+      frame = requestAnimationFrame(autoScroll);
+    };
+
+    frame = requestAnimationFrame(autoScroll);
+
+    const stop = () => cancelAnimationFrame(frame);
+
+    scrollRef.current.addEventListener('mouseenter', stop);
+    scrollRef.current.addEventListener('touchstart', stop);
+
+    return () => cancelAnimationFrame(frame);
+  }, [list]);
 
   return (
-    <section className="py-20 bg-black">
+    <section className="py-24 bg-black text-white">
       <div className="max-w-6xl mx-auto px-6">
 
         {/* HEADER */}
         <div className="flex items-center justify-between mb-10">
-          <h2 className="text-4xl font-bold text-center mb-16">
+          <h2 className="text-4xl font-bold">
             <span className="bg-gradient-to-r from-cyan-400 to-green-400 bg-clip-text text-transparent">
               Featured Projects
             </span>
           </h2>
 
-          {validProjects.length > 0 && (
+          {list.length > 0 && (
             <div className="hidden md:flex gap-2">
               <button
-                onClick={() => scrollByAmount('left')}
-                className="px-3 py-2 bg-gray-900 border border-gray-800 rounded hover:border-cyan-400/50"
+                onClick={() => scroll('left')}
+                className="px-3 py-2 bg-gray-900 border border-gray-800 rounded hover:border-cyan-400"
               >
                 ←
               </button>
               <button
-                onClick={() => scrollByAmount('right')}
-                className="px-3 py-2 bg-gray-900 border border-gray-800 rounded hover:border-cyan-400/50"
+                onClick={() => scroll('right')}
+                className="px-3 py-2 bg-gray-900 border border-gray-800 rounded hover:border-cyan-400"
               >
                 →
               </button>
@@ -89,95 +115,173 @@ const Projects = () => {
           </p>
         )}
 
-        {!isLoading && !isError && validProjects.length === 0 && (
+        {!isLoading && !isError && list.length === 0 && (
           <p className="text-center text-gray-400">
             No projects published yet.
           </p>
         )}
 
         {/* CAROUSEL */}
-        {!isLoading && !isError && validProjects.length > 0 && (
+        {!isLoading && !isError && list.length > 0 && (
           <div
             ref={scrollRef}
-            className="flex gap-6 overflow-x-auto pb-8 scroll-smooth snap-x snap-mandatory scrollbar-hide"
+            className="
+              flex gap-6 overflow-x-auto pb-10
+              snap-x snap-mandatory scroll-smooth
+              scrollbar-hide
+              px-2
+            "
           >
-            {validProjects.map((project) => {
+            {list.map((project) => {
               const isActive = activeId === project.id;
 
               return (
                 <div
                   key={project.id}
                   data-id={project.id}
-                  className="min-w-[320px] md:min-w-[380px] snap-center transition-all duration-500"
+                  className="
+                    min-w-[320px] md:min-w-[420px]
+                    snap-center
+                    transition-all duration-500
+                  "
                 >
-                  <div
-                    className={`
-                      bg-gray-900 border rounded-xl overflow-hidden shadow-lg
-                      transition-all duration-500
-                      ${isActive
-                        ? 'border-cyan-400 scale-105 opacity-100'
-                        : 'border-gray-800 opacity-60 scale-95 blur-[0.2px]'
-                      }
-                      hover:opacity-100 hover:scale-105 hover:border-cyan-400
-                    `}
-                  >
-                    {/* IMAGE */}
-                    <div className="relative overflow-hidden">
-                      <img
-                        src={project.imageUrl}
-                        alt={project.title}
-                        className="w-full h-48 object-cover transition-transform duration-700 hover:scale-110"
-                        loading="lazy"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-                    </div>
+<div
+  className={`
+    relative rounded-2xl overflow-hidden
+    border shadow-lg
+    transition-all duration-500
+    group cursor-pointer
 
-                    {/* CONTENT */}
-                    <div className="p-5 flex flex-col gap-3">
-                      <h3 className="text-lg font-semibold text-green-400">
-                        {project.title}
-                      </h3>
+    ${
+      isActive
+        ? 'border-cyan-400 scale-105'
+        : 'border-gray-800 opacity-80 scale-95'
+    }
 
-                      <p className="text-gray-400 text-sm line-clamp-2">
-                        {project.description}
-                      </p>
+    hover:scale-105 hover:opacity-100 hover:border-cyan-400
+  `}
+>
+  {/* IMAGE */}
+  <div className="relative h-56 overflow-hidden">
+    <img
+      src={project.imageUrl}
+      alt={project.title}
+      className="
+        w-full h-full object-cover
+        transition-transform duration-700
+        group-hover:scale-110
+      "
+      loading="lazy"
+    />
 
-                      {/* TECH */}
-                      <div className="flex flex-wrap gap-2">
-                        {(project.techStack ?? [])
-                          .slice(0, 3)
-                          .map((tech) => (
-                            <span
-                              key={`${project.id}-${tech}`}
-                              className="px-2 py-1 text-xs rounded-full bg-gray-800 text-cyan-400 border border-cyan-400/30"
-                            >
-                              {tech}
-                            </span>
-                          ))}
-                      </div>
+    <div
+      className="
+        absolute inset-0
+        bg-gradient-to-t
+        from-black via-black/40 to-transparent
+      "
+    />
+  </div>
 
-                      {/* LINKS */}
-                      <div className="flex justify-between pt-2">
-                        <a
-                          href={project.githubUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-green-400 text-sm hover:text-green-300"
-                        >
-                          Repo
-                        </a>
 
-                        <a
-                          href={project.demoUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-cyan-400 text-sm hover:text-cyan-300"
-                        >
-                          Live
-                        </a>
-                      </div>
-                    </div>
-                  </div>
+  {/* CONTENT */}
+  <div className="p-5 flex flex-col gap-3">
+
+    <h3 className="text-xl font-semibold text-green-400">
+      {project.title}
+    </h3>
+
+
+    {/* DESCRIPTION */}
+    <div
+      className="
+        text-gray-400 text-sm
+        transition-all duration-300
+        max-h-12
+        overflow-hidden
+
+        group-hover:max-h-40
+        group-hover:overflow-y-auto
+      "
+    >
+      {project.description}
+    </div>
+
+
+    {/* TECH STACK */}
+    <div
+      className="
+        flex flex-wrap gap-2
+        transition-all duration-300
+      "
+    >
+      {(project.techStack ?? []).map((tech) => (
+        <span
+          key={`${project.id}-${tech}`}
+          className="
+            px-2 py-1
+            text-xs
+            rounded-full
+            bg-gray-800
+            text-cyan-400
+            border border-cyan-400/30
+          "
+        >
+          {tech}
+        </span>
+      ))}
+    </div>
+
+
+    {/* ACTIONS */}
+    <div className="flex justify-between pt-3 text-sm">
+
+      {project.githubUrl !== '#' && (
+        <a
+          href={project.githubUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="
+            text-green-400
+            hover:text-green-300
+          "
+        >
+          Repository
+        </a>
+      )}
+
+
+      {project.demoUrl !== '#' && (
+        <a
+          href={project.demoUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="
+            text-cyan-400
+            hover:text-cyan-300
+          "
+        >
+          Live Demo
+        </a>
+      )}
+
+    </div>
+
+  </div>
+
+
+  {isActive && (
+    <div
+      className="
+        absolute inset-0
+        border-2 border-cyan-400/30
+        rounded-2xl
+        pointer-events-none
+      "
+    />
+  )}
+
+</div>
                 </div>
               );
             })}
