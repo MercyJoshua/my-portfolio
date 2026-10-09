@@ -10,7 +10,7 @@ import AnimatedBackground from './AnimatedBackground';
 
 const AppLayout: React.FC = () => {
   return (
-    <div className="min-h-screen bg-black text-white relative">
+    <div className="min-h-screen bg-[#FFF3C7]/15 dark:bg-black text-slate-900 dark:text-white transition-colors duration-300 relative overflow-x-hidden">
       <AnimatedBackground />
       <Navigation />
       

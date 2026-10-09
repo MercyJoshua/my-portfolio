@@ -33,4 +33,3 @@
 - `Hero`, `Contact`, and `Footer` remain static in v1.
 - Project images are URL/path fields in v1.
 - Admin UI is available at `/admin` in the frontend app.
-- This document assumes frontend and backend are split into separate repositories.

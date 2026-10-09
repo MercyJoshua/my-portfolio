@@ -54,6 +54,20 @@ export default {
           DEFAULT: 'hsl(var(--card))',
           foreground: 'hsl(var(--card-foreground))'
         },
+        palette: {
+          cream: '#FFF3C7',
+          peach: '#FEC7B4',
+          rose: '#FC819E',
+          magenta: '#F7418F',
+          1: '#FFF3C7',
+          2: '#FEC7B4',
+          3: '#FC819E',
+          4: '#F7418F',
+        },
+        'palette-cream': '#FFF3C7',
+        'palette-peach': '#FEC7B4',
+        'palette-rose': '#FC819E',
+        'palette-magenta': '#F7418F',
         sidebar: {
           DEFAULT: 'hsl(var(--sidebar-background))',
           foreground: 'hsl(var(--sidebar-foreground))',
